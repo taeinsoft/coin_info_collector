@@ -1,5 +1,5 @@
 # This is a sample Python script.
-from bitcoin_util.bit_manager import BitManager
+from manager.bit_manager import BitManager
 
 
 # Press Shift+F10 to execute it or replace it with your code.
@@ -14,9 +14,10 @@ def print_hi(name):
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
     bitManager = BitManager()
-    maketInfo = bitManager.getMarket(True)
-    for market in maketInfo:
-        print(market)
+    bitManager.run()
+    # maketInfo = bitManager.getMarkets("KRW", True)
+    # for market in maketInfo:
+    #     print(market)
 
     # tickers = bitManager.getTickers(fiat="KRW")
     # for ticker in tickers:

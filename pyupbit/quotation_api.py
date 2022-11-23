@@ -11,9 +11,10 @@ import pandas as pd
 import time
 from pyupbit.request_api import _call_public_api, _send_get_request
 
-def get_market(fiat="", is_details=False):
-    market, req_limit_info = fetch_market(is_details=is_details)
-    return market
+def get_markets(fiat="", is_details=False):
+    markets, req_limit_info = fetch_market(is_details=is_details)
+    markets = [x for x in markets if x['market'].startswith(fiat)]
+    return markets
 
 def fetch_market(is_details=False, limit_info=False):
     url = "https://api.upbit.com/v1/market/all"
@@ -151,7 +152,7 @@ def get_daily_ohlcv_from_base(ticker="KRW-BTC", base=0):
         return None
 
 
-def get_current_price(ticker="KRW-BTC", limit_info=False, verbose=False):
+def get_current_price(ticker="KRW-BTC", verbose=False, limit_info=False):
     """현재가 정보 조회
 
     Args:

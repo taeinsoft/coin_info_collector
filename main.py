@@ -15,12 +15,6 @@ def print_hi(name):
 if __name__ == '__main__':
     bitManager = BitManager()
     bitManager.run()
-    # maketInfo = bitManager.getMarkets("KRW", True)
-    # for market in maketInfo:
-    #     print(market)
 
-    # tickers = bitManager.getTickers(fiat="KRW")
-    # for ticker in tickers:
-    #     print(ticker)
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/

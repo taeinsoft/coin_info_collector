@@ -1,6 +1,10 @@
 import logging
 import signal
 import string
+import threading
+from datetime import datetime
+
+import schedule as schedule
 
 import pyupbit as pu
 import time
@@ -166,6 +170,30 @@ class BitManager:
         self.connection.commit()
         cur.close()
 
+    def __start_update_tickers(self):
+        if not self.__stop:
+            threading.Timer(1, self.__start_update_tickers).start()
+            start = time.time()
+            cur = self.connection.cursor()
+            tickers = self.__getTickers(fiat="KRW")
+            infos = self.__getCurrentTickerInfo(tickers)
+            for info in infos:
+                sql = "insert into {0} (market, trade_date, trade_time, trade_date_kst, trade_time_kst, trade_timestamp, opening_price, high_price, low_price, trade_price, prev_closing_price, `change`, change_price, change_rate, signed_change_price, signed_change_rate, trade_volume, acc_trade_price, acc_trade_price_24h, acc_trade_volume, acc_trade_volume_24h, highest_52_week_price, highest_52_week_date, lowest_52_week_price, lowest_52_week_date, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(
+                    self.__generate_ticker_table_name(info['market']))
+                value = (
+                info['market'], info['trade_date'], info['trade_time'], info['trade_date_kst'], info['trade_time_kst'],
+                info['trade_timestamp'], info['opening_price'], info['high_price'], info['low_price'], info['trade_price'],
+                info['prev_closing_price'], info['change'], info['change_price'], info['change_rate'],
+                info['signed_change_price'], info['signed_change_rate'], info['trade_volume'], info['acc_trade_price'],
+                info['acc_trade_price_24h'], info['acc_trade_volume'], info['acc_trade_volume_24h'],
+                info['highest_52_week_price'], info['highest_52_week_date'], info['lowest_52_week_price'],
+                info['lowest_52_week_date'], info['timestamp'])
+                cur.execute(sql, value)
+            self.connection.commit()
+            cur.close()
+            end = time.time()
+            self.logger.info("[{0}] Updated tickers count : {1} -> {2}s".format(datetime.now(), len(infos), (end-start)))
+
     def run(self):
         # DB 연결
         self.__connect_db()
@@ -176,18 +204,11 @@ class BitManager:
         self.__create_ticker_table()
 
         # Current Ticker 수집
-
+        self.__start_update_tickers()
         while not self.__stop:
-            cur = self.connection.cursor()
-            tickers = self.__getTickers(fiat="KRW")
-            infos = self.__getCurrentTickerInfo(tickers)
-            for info in infos:
-                sql = "insert into {0} (market, trade_date, trade_time, trade_date_kst, trade_time_kst, trade_timestamp, opening_price, high_price, low_price, trade_price, prev_closing_price, `change`, change_price, change_rate, signed_change_price, signed_change_rate, trade_volume, acc_trade_price, acc_trade_price_24h, acc_trade_volume, acc_trade_volume_24h, highest_52_week_price, highest_52_week_date, lowest_52_week_price, lowest_52_week_date, `timestamp`) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(self.__generate_ticker_table_name(info['market']))
-                value = (info['market'], info['trade_date'], info['trade_time'], info['trade_date_kst'], info['trade_time_kst'], info['trade_timestamp'], info['opening_price'], info['high_price'], info['low_price'], info['trade_price'], info['prev_closing_price'], info['change'], info['change_price'], info['change_rate'], info['signed_change_price'], info['signed_change_rate'], info['trade_volume'], info['acc_trade_price'], info['acc_trade_price_24h'], info['acc_trade_volume'], info['acc_trade_volume_24h'], info['highest_52_week_price'], info['highest_52_week_date'], info['lowest_52_week_price'], info['lowest_52_week_date'], info['timestamp'])
-                cur.execute(sql, value)
-            self.connection.commit()
-            cur.close()
+            self.logger.info("Running Main Loop")
             time.sleep(1)
+
         self.__close_db()
 
     def stop(self, signum, frame):
